@@ -19,6 +19,7 @@ try:
 	import multiprocessing
 	import getopt
 	import ipaddr
+	import time
 	
 except ImportError, e:
 	print 'Error while importing:', str(e)
@@ -42,7 +43,7 @@ def update(id,val):
 def ping_ipv6(id,ip):
 
 	try:
-		RESPONSE = subprocess.call('ping6 -c 1 %s' % ip, shell=True, stdout = open('/dev/null', 'w'), stderr=subprocess.STDOUT)
+		RESPONSE = subprocess.call('ping6 -c 1 -s 30 %s' % ip, shell=True, stdout = open('/dev/null', 'w'), stderr=subprocess.STDOUT)
 	except:
 		print "Error"
 	if RESPONSE == 0:
@@ -74,19 +75,22 @@ def ping_ipv4(id,ip):
 		val=0
 	if id != '-1':	
 		update(id,val) 
-		
-def ping(data):
-	id,ip=data.split(';')
-	ip = ip.lstrip()
-	ip = ip.rstrip()
-	ip.strip()
-	addr=ipaddr.IPAddress(ip)
-	if addr.version == 4:
-		ping_ipv4(id,ip)
-	elif addr.version == 6:
-		ping_ipv6(id,ip)
-	else:
-		print 'Error - not valid IPv4 nor IPv6 address'
+
+def vesna_ping(data):
+	lines = [line.rstrip('\n') for line in open(data)]
+	for line in lines:
+		id,ip=line.split(';')
+		ip = ip.lstrip()
+		ip = ip.rstrip()
+		ip.strip()
+		addr=ipaddr.IPAddress(ip)
+		time.sleep(1)
+		if addr.version == 4:
+			ping_ipv4(id,ip)
+		elif addr.version == 6:
+			ping_ipv6(id,ip)
+		else:
+			print 'Error - not valid IPv4 nor IPv6 address'
 	
 def help():
 	print sys.argv[0] + ': missing argument'
@@ -111,14 +115,8 @@ def main():
 			except:
 				print 'Unspecified Error'
 		elif o in ("-f", "--filename"):
-			FILENAME = a
-			LIST = fileinput.input(FILENAME)
 			if __name__ == '__main__':
-				PSIZE = multiprocessing.cpu_count() * 4
-				P = multiprocessing.Pool(processes=PSIZE)
-				P.map(ping, LIST)
-				P.close()
-				P.join()
+			    vesna_ping(a)
 		else:
 			print "Unhandled Option"
 
